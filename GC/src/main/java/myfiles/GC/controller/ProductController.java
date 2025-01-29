@@ -7,10 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 @RestController
 @RequestMapping("/api/products")
 @CrossOrigin(origins = "http://localhost:5173")
-
 public class ProductController {
 
     @Autowired
@@ -52,6 +52,4 @@ public class ProductController {
     public List<Product> saveProducts(@RequestBody List<Product> products) {
         return productService.saveProducts(products);
     }
-
-
 }
