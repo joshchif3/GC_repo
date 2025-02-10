@@ -1,6 +1,6 @@
 package myfiles.GC.service;
 
-import myfiles.GC.exception.ResourceNotFoundException; // Ensure this import is correct
+import myfiles.GC.exception.ResourceNotFoundException;
 import myfiles.GC.model.Product;
 import myfiles.GC.model.ProductCategory;
 import myfiles.GC.model.ProductStatus;
@@ -24,7 +24,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product saveProduct(Product product) {
-        // Set default status if not provided
         if (product.getStatus() == null) {
             product.setStatus(ProductStatus.AVAILABLE);
         }
@@ -59,7 +58,6 @@ public class ProductServiceImpl implements ProductService {
             product.setStockCount(product.getStockCount() - 1);
         }
 
-        // Update status based on stock count
         if (product.getStockCount() <= 0) {
             product.setStatus(ProductStatus.OUT_OF_STOCK);
         } else if (product.getStatus() == ProductStatus.OUT_OF_STOCK) {
@@ -71,7 +69,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Product> saveProducts(List<Product> products) {
-        // Set default status for each product if not provided
         products.forEach(product -> {
             if (product.getStatus() == null) {
                 product.setStatus(ProductStatus.AVAILABLE);
@@ -94,7 +91,6 @@ public class ProductServiceImpl implements ProductService {
     public Product updateProduct(int id, Product productDetails) {
         Product product = getProductById(id);
 
-        // Update fields if they are not null
         if (productDetails.getName() != null) {
             product.setName(productDetails.getName());
         }
