@@ -1,25 +1,52 @@
-// AuthenticationController.java (if you're using JWT)
 package myfiles.GC.controller;
 
+import myfiles.GC.dto.UserLoginRequest;
+import myfiles.GC.security.JwtResponse;
+import myfiles.GC.security.JwtTokenProvider;
+import myfiles.GC.service.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173")
 public class AuthenticationController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @PostMapping("/login")
-    public String login(@RequestParam String username, @RequestParam String password) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-        );
-        // After successful authentication, return JWT token or success message
-        return "Login successful"; // You can replace this with actual JWT token generation logic
+    public ResponseEntity<?> login(@RequestBody UserLoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Get the authenticated user
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+            // Generate the JWT token
+            String token = jwtTokenProvider.generateToken(authentication);
+
+            // Return the token, role, and userId in the response
+            return ResponseEntity.ok(new JwtResponse(token, userDetails.getRole(), userDetails.getId()));
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 }

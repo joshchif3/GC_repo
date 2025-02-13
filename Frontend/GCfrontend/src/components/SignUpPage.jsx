@@ -1,66 +1,60 @@
+// src/components/SignUpPage.jsx
 import React, { useState } from "react";
-import axios from "axios";
+import { useAuth } from "../services/AuthContext";
 import { useNavigate } from "react-router-dom";
-import "../styling/login.css";
 
-const SignUpPage = () => {
+function SignUpPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("USER");
   const [error, setError] = useState("");
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Clear any previous errors
 
     try {
-      // Proceed to register the user without checking the username
-      await axios.post("http://localhost:8080/users/register", {
-        username,
-        password,
-        role,
-      });
-
+      await register(username, password, role);
       navigate("/login"); // Redirect to login page after successful registration
-    } catch (err) {
-      setError("Error registering user. Please try again.");
+    } catch (error) {
+      setError(error.message || "Registration failed. Please try again.");
+      console.error("Registration error:", error);
     }
   };
 
   return (
-    <div className="auth-container">
+    <div className="signup-page">
       <h2>Sign Up</h2>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error-message">{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Role</label>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="USER">User</option>
-            <option value="ADMIN">Admin</option>
-          </select>
-        </div>
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          required
+        >
+          <option value="USER">User</option>
+          <option value="ADMIN">Admin</option>
+        </select>
         <button type="submit">Sign Up</button>
       </form>
     </div>
   );
-};
+}
 
 export default SignUpPage;

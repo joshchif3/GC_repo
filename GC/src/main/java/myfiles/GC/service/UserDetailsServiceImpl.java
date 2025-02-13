@@ -1,8 +1,11 @@
 package myfiles.GC.service;
 
+import myfiles.GC.model.Cart;
+import myfiles.GC.model.Role;
 import myfiles.GC.model.User;
-import myfiles.GC.model.UserRole; // Add this import for UserRole
+import myfiles.GC.model.UserRole;
 import myfiles.GC.repository.UserRepository;
+import myfiles.GC.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,10 +18,13 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-public class UserDetailsServiceImpl implements org.springframework.security.core.userdetails.UserDetailsService, UserDetailService { // Implement both interfaces
+public class UserDetailsServiceImpl implements org.springframework.security.core.userdetails.UserDetailsService, UserDetailService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -28,11 +34,7 @@ public class UserDetailsServiceImpl implements org.springframework.security.core
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-        // Convert UserRole to SimpleGrantedAuthority for roles
-        user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name())));
-
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), authorities);
+        return new UserDetailsImpl(user);
     }
 
     @Override
@@ -42,10 +44,26 @@ public class UserDetailsServiceImpl implements org.springframework.security.core
 
     @Override
     public User registerNewUser(String username, String password, String role) {
+        // Create a new user
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRoles(Set.of(UserRole.valueOf(role))); // Assuming role passed as a string (e.g., "USER" or "ADMIN")
-        return userRepository.save(user); // Return the saved User object
+
+        // Find the role by name
+        Role userRole = roleRepository.findByName(UserRole.valueOf(role))
+                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+
+        // Assign the role to the user
+        user.setRoles(Set.of(userRole));
+
+        // Create a new cart and associate it with the user
+        Cart cart = new Cart();
+        cart.setUser(user); // Link the cart to the user
+        user.setCart(cart); // Link the user to the cart
+
+        // Save the user (this will also save the cart due to CascadeType.ALL)
+        return userRepository.save(user);
     }
+
+
 }

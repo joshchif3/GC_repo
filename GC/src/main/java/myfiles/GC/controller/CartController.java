@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cart")
-@CrossOrigin(origins = "http://localhost:5173") // Ensure frontend can access this API
+@CrossOrigin(origins = "http://localhost:5173")
 public class CartController {
 
     @Autowired
     private CartService cartService;
 
     // Add a product to the cart
-    @PreAuthorize("hasRole('USER')") // Restricting to users
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/{cartId}/add")
     public ResponseEntity<Cart> addToCart(
             @PathVariable int cartId,
@@ -27,7 +27,7 @@ public class CartController {
     }
 
     // Remove a product from the cart
-    @PreAuthorize("hasRole('USER')") // Restricting to users
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/{cartId}/remove")
     public ResponseEntity<Cart> removeFromCart(
             @PathVariable int cartId,
@@ -37,7 +37,7 @@ public class CartController {
     }
 
     // Get the cart by ID
-    @PreAuthorize("hasRole('USER')") // Restricting to users
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{cartId}")
     public ResponseEntity<Cart> getCart(@PathVariable int cartId) {
         Cart cart = cartService.getCart(cartId);
@@ -45,7 +45,7 @@ public class CartController {
     }
 
     // Clear the cart
-    @PreAuthorize("hasRole('USER')") // Restricting to users
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/{cartId}/clear")
     public ResponseEntity<Void> clearCart(@PathVariable int cartId) {
         cartService.clearCart(cartId);
@@ -53,7 +53,7 @@ public class CartController {
     }
 
     // Update quantity of a product in the cart
-    @PreAuthorize("hasRole('USER')") // Restricting to users
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/{cartId}/update")
     public ResponseEntity<Cart> updateQuantity(
             @PathVariable int cartId,

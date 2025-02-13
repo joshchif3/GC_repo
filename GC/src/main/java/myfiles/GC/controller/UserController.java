@@ -7,14 +7,16 @@ import myfiles.GC.security.JwtResponse;
 import myfiles.GC.service.UserDetailsServiceImpl;
 import myfiles.GC.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -37,14 +39,18 @@ public class UserController {
         Optional<User> existingUser = userDetailsService.findByUsername(request.getUsername());
 
         if (existingUser.isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username already exists!");
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Username already exists!");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
         userDetailsService.registerNewUser(request.getUsername(), request.getPassword(), request.getRole());
-        return ResponseEntity.ok("User registered successfully!");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "User registered successfully!");
+        return ResponseEntity.ok(response);
     }
 
-    // Login user (returns JWT token)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginRequest request) {
         try {
@@ -55,9 +61,14 @@ public class UserController {
 
             String token = jwtTokenProvider.generateToken(authentication);
 
-            return ResponseEntity.ok(new JwtResponse(token));
+            User user = userDetailsService.findByUsername(request.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            return ResponseEntity.ok(new JwtResponse(token, user.getRoles().iterator().next().getName().name(), user.getId())); // ✅ Pass role & userId
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
 
@@ -65,6 +76,9 @@ public class UserController {
     @GetMapping("/check-username/{username}")
     public ResponseEntity<?> checkUsername(@PathVariable String username) {
         Optional<User> user = userDetailsService.findByUsername(username);
-        return ResponseEntity.ok(!user.isPresent()); // true if available, false if taken
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("available", !user.isPresent()); // true if available, false if taken
+        return ResponseEntity.ok(response);
     }
 }
