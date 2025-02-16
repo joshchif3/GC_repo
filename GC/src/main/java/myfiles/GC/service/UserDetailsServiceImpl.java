@@ -43,27 +43,29 @@ public class UserDetailsServiceImpl implements org.springframework.security.core
     }
 
     @Override
-    public User registerNewUser(String username, String password, String role) {
+    public User registerNewUser(String username, String email, String password, String role) {
+        // Always force the role to "USER"
+        role = "USER";
+
         // Create a new user
         User user = new User();
         user.setUsername(username);
+        user.setEmail(email); // Set email field
         user.setPassword(passwordEncoder.encode(password));
 
-        // Find the role by name
-        Role userRole = roleRepository.findByName(UserRole.valueOf(role))
-                .orElseThrow(() -> new RuntimeException("Role not found: " + role));
+        // Find the "USER" role in the database
+        Role userRole = roleRepository.findByName(UserRole.USER)
+                .orElseThrow(() -> new RuntimeException("Role 'USER' not found in database"));
 
-        // Assign the role to the user
+        // Assign only the "USER" role
         user.setRoles(Set.of(userRole));
 
-        // Create a new cart and associate it with the user
+        // Create and assign a new cart for the user
         Cart cart = new Cart();
-        cart.setUser(user); // Link the cart to the user
-        user.setCart(cart); // Link the user to the cart
+        cart.setUser(user);
+        user.setCart(cart);
 
-        // Save the user (this will also save the cart due to CascadeType.ALL)
+        // Save and return the user
         return userRepository.save(user);
     }
-
-
 }

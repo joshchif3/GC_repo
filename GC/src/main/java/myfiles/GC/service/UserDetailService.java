@@ -5,5 +5,5 @@ import java.util.Optional;
 
 public interface UserDetailService {
     Optional<User> findByUsername(String username);
-    User registerNewUser(String username, String password, String role);
+    User registerNewUser(String username, String email, String password, String role);
 }

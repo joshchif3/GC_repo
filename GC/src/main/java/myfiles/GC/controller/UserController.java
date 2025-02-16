@@ -33,9 +33,27 @@ public class UserController {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    // Register a new user (checks if username already exists)
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody UserRegistrationRequest request) {
+        // Validate inputs
+        if (!request.getUsername().matches("^[a-zA-Z0-9_]{3,20}$")) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Username must be 3-20 characters long and contain only letters, numbers, and underscores.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        if (!request.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Please enter a valid email address.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        if (!request.getPassword().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
         Optional<User> existingUser = userDetailsService.findByUsername(request.getUsername());
 
         if (existingUser.isPresent()) {
@@ -44,7 +62,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        userDetailsService.registerNewUser(request.getUsername(), request.getPassword(), request.getRole());
+        // ✅ Force role to "USER" to prevent admin registrations
+        userDetailsService.registerNewUser(request.getUsername(), request.getEmail(), request.getPassword(), "USER");
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "User registered successfully!");

@@ -6,6 +6,9 @@ public class UserRegistrationRequest {
     @JsonProperty("username") // Ensures JSON field "username" maps to this field
     private String username;
 
+    @JsonProperty("email") // Add email field
+    private String email;
+
     @JsonProperty("password")
     private String password;
 
@@ -19,6 +22,14 @@ public class UserRegistrationRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getEmail() { // Add getter for email
+        return email;
+    }
+
+    public void setEmail(String email) { // Add setter for email
+        this.email = email;
     }
 
     public String getPassword() {
