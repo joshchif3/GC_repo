@@ -1,4 +1,3 @@
-// src/components/LoginPage.jsx
 import React, { useState } from "react";
 import { useAuth } from "../services/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,42 +11,50 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError(""); // Reset any previous error message
 
     try {
-      const { role } = await login(username, password);
+      // Call the login function from the AuthContext
+      const { role, userId } = await login(username, password);
+
+      // After successful login, navigate based on the user's role
       if (role === "ADMIN") {
         navigate("/admin");
       } else {
-        navigate("/user");
+        navigate("/user"); // or any other route for regular users
       }
     } catch (error) {
+      // Display an error message if login fails
       setError("Login failed. Please check your credentials.");
       console.error("Login error:", error);
     }
   };
 
   return (
-    <div className="login-page">
-      <h2>Login</h2>
-      {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
+    <div className="auth-container">
+      <div className="auth-box">
+        <h2>Login</h2>
+
+        {error && <p className="error-message">{error}</p>}
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+      </div>
     </div>
   );
 }

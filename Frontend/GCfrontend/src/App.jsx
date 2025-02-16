@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -13,15 +12,16 @@ import AdminPage from "./components/AdminPage";
 import ProductForm from "./components/ProductForm"; // Import ProductForm for add/edit
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUpPage";
+import CheckoutForm from "./components/CheckoutPage"; // Import CheckoutForm
 import { AuthProvider } from "./services/AuthContext";
 import { CartProvider } from "./services/CartContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Router>
+    <Router>
+      <AuthProvider>
+        <CartProvider>
           <div className="app-container">
             <Header />
             <Routes>
@@ -31,6 +31,7 @@ function App() {
               <Route path="/cart" element={<Cart />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/checkout" element={<CheckoutForm />} /> {/* Checkout Route */}
 
               {/* Admin Page (Protected Route) */}
               <Route
@@ -65,9 +66,9 @@ function App() {
             </Routes>
             <Footer />
           </div>
-        </Router>
-      </CartProvider>
-    </AuthProvider>
+        </CartProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

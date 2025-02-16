@@ -1,4 +1,3 @@
-// src/services/authService.js
 const API_URL = "http://localhost:8080";
 
 export const login = async (username, password) => {
@@ -21,11 +20,11 @@ export const login = async (username, password) => {
   };
 };
 
-export const register = async (username, password, role) => {
+export const register = async (username, email, password, role) => {
   const response = await fetch(`${API_URL}/users/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password, role }),
+    body: JSON.stringify({ username, email, password, role }),
   });
 
   if (!response.ok) {

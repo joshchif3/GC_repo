@@ -1,50 +1,55 @@
-import React, { createContext, useState, useContext } from "react";
-import { login as loginApi, register as registerApi } from "./authService";
+import { useState, createContext, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 
-export const AuthContext = createContext();
+// Create the AuthContext
+const AuthContext = createContext();
 
+// AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-  const login = async (username, password) => {
+  const register = async (username, email, password, role) => {
     try {
-      const response = await loginApi(username, password);
-      const token = response.token;
-      const role = response.role;
-      const userId = response.userId; // Ensure the backend returns userId
-      setUser({ id: userId, username, token, role, cart: { id: userId } }); // Use userId as cartId
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("userId", userId); // Store userId in localStorage
-      return { token, role, userId };
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
-  };
+      const response = await fetch("http://localhost:8080/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          role,
+        }),
+      });
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("userId");
-  };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Registration failed.");
+      }
 
-  const register = async (username, password, role) => {
-    try {
-      const response = await registerApi(username, password, role);
-      return response;
+      const data = await response.json();
+      console.log("Registration successful:", data);
+      navigate("/login");
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error("Registration error:", error);
       throw error;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, register }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// useAuth hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

@@ -1,15 +1,24 @@
-// src/services/api.js
 const API_URL = "http://localhost:8080/api";
 
 // Fetch all products
 export const fetchProducts = async () => {
-  const response = await fetch(`${API_URL}/products`);
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_URL}/products`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.json();
 };
 
 // Fetch a single product by ID
 export const fetchProductById = async (id) => {
-  const response = await fetch(`${API_URL}/products/${id}`);
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_URL}/products/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.json();
 };
 
@@ -85,13 +94,12 @@ export const addToCart = async (cartId, productId, quantity) => {
 // Remove an item from the cart
 export const removeFromCart = async (cartId, productId) => {
   const token = localStorage.getItem("token");
-  const response = await fetch(`${API_URL}/cart/${cartId}/remove`, {
+  const response = await fetch(`${API_URL}/cart/${cartId}/remove?productId=${productId}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ productId }),
   });
 
   if (!response.ok) {
@@ -105,18 +113,36 @@ export const removeFromCart = async (cartId, productId) => {
 // Update the quantity of an item in the cart
 export const updateQuantity = async (cartId, productId, quantity) => {
   const token = localStorage.getItem("token");
-  const response = await fetch(`${API_URL}/cart/${cartId}/update`, {
+  const response = await fetch(`${API_URL}/cart/${cartId}/update?productId=${productId}&quantity=${quantity}`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ productId, quantity }),
   });
 
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(`Failed to update quantity: ${errorData}`);
+  }
+
+  return response.json();
+};
+
+// Create a payment intent for Stripe
+export const createPaymentIntent = async (data) => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_URL}/checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data), // Send the amount and other necessary data
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Failed to create payment intent: ${errorData}`);
   }
 
   return response.json();
