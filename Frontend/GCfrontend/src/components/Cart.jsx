@@ -3,16 +3,18 @@ import { CartContext } from "../services/CartContext";
 import { useAuth } from "../services/AuthContext";
 import { fetchProductById } from "../services/api";
 import { Link } from "react-router-dom";
+import debounce from 'lodash/debounce';
 
 function Cart() {
   const { cartItems, removeFromCart, updateQuantity, fetchUserCart } = useContext(CartContext);
   const { user } = useAuth();
   const [productDetails, setProductDetails] = useState({});
   const [totalAmount, setTotalAmount] = useState(0);
+  const [productCache, setProductCache] = useState({});
 
   useEffect(() => {
-    if (user?.id) {
-      fetchUserCart(user.id);
+    if (user?.userId) {
+      fetchUserCart(user.userId);
     }
   }, [user, fetchUserCart]);
 
@@ -22,11 +24,18 @@ function Cart() {
       let total = 0;
 
       for (const productId of Object.keys(cartItems)) {
-        const product = await fetchProductById(productId);
-        details[productId] = product;
-        total += product.price * cartItems[productId];
+        if (!productCache[productId]) {
+          const product = await fetchProductById(productId);
+          if (product) {
+            details[productId] = product;
+            setProductCache((prev) => ({ ...prev, [productId]: product }));
+          }
+        } else {
+          details[productId] = productCache[productId];
+        }
+        total += details[productId]?.price * cartItems[productId] || 0;
       }
-      
+
       setProductDetails(details);
       setTotalAmount(total);
     };
@@ -34,7 +43,11 @@ function Cart() {
     if (Object.keys(cartItems).length > 0) {
       loadProductDetails();
     }
-  }, [cartItems]);
+  }, [cartItems, productCache]);
+
+  const debouncedUpdateQuantity = debounce((userId, productId, quantity) => {
+    updateQuantity(userId, productId, quantity);
+  }, 300);
 
   return (
     <div className="cart-container">
@@ -57,11 +70,11 @@ function Cart() {
                   type="number"
                   value={quantity}
                   min="1"
-                  onChange={(e) => updateQuantity(user.id, productId, parseInt(e.target.value))}
+                  onChange={(e) => debouncedUpdateQuantity(user.userId, productId, parseInt(e.target.value))}
                 />
                 <p>Price: ${product.price}</p>
                 <p>Total: ${(product.price * quantity).toFixed(2)}</p>
-                <button onClick={() => removeFromCart(user.id, productId)}>Remove</button>
+                <button onClick={() => removeFromCart(user.userId, productId)}>Remove</button>
               </div>
             ) : null;
           })}

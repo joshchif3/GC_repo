@@ -4,6 +4,7 @@ import myfiles.GC.dto.UserLoginRequest;
 import myfiles.GC.dto.UserRegistrationRequest;
 import myfiles.GC.model.User;
 import myfiles.GC.security.JwtResponse;
+import myfiles.GC.service.UserDetailsImpl;
 import myfiles.GC.service.UserDetailsServiceImpl;
 import myfiles.GC.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,39 +37,43 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody UserRegistrationRequest request) {
-        // Validate inputs
+        // Validate username format
         if (!request.getUsername().matches("^[a-zA-Z0-9_]{3,20}$")) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Username must be 3-20 characters long and contain only letters, numbers, and underscores.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", "Username must be 3-20 characters (letters, numbers, underscores only)")
+            );
         }
 
-        if (!request.getEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Please enter a valid email address.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        // Validate email format
+        if (!request.getEmail().matches("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", "Invalid email format")
+            );
         }
 
-        if (!request.getPassword().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        // Validate password strength
+        if (!request.getPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$")) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", "Password must be 8+ chars with letter, number, and special character")
+            );
         }
 
-        Optional<User> existingUser = userDetailsService.findByUsername(request.getUsername());
-
-        if (existingUser.isPresent()) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Username already exists!");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        // Check username availability
+        if (userDetailsService.findByUsername(request.getUsername()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    Map.of("message", "Username already exists")
+            );
         }
 
-        // ✅ Force role to "USER" to prevent admin registrations
-        userDetailsService.registerNewUser(request.getUsername(), request.getEmail(), request.getPassword(), "USER");
+        // Force USER role for all registrations
+        userDetailsService.registerNewUser(
+                request.getUsername(),
+                request.getEmail(),
+                request.getPassword(),
+                "USER"
+        );
 
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "User registered successfully!");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("message", "Registration successful"));
     }
 
     @PostMapping("/login")
@@ -78,12 +84,19 @@ public class UserController {
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            // Get the authenticated user
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+            // Generate the JWT token
             String token = jwtTokenProvider.generateToken(authentication);
 
-            User user = userDetailsService.findByUsername(request.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            return ResponseEntity.ok(new JwtResponse(token, user.getRoles().iterator().next().getName().name(), user.getId())); // ✅ Pass role & userId
+            // Return all required user information
+            return ResponseEntity.ok(new JwtResponse(
+                    token,
+                    userDetails.getRole(),
+                    userDetails.getUsername(),  // Add username
+                    userDetails.getUserId()     // Correct method name
+            ));
         } catch (Exception e) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Invalid credentials");
@@ -91,13 +104,22 @@ public class UserController {
         }
     }
 
-    // Check if the username is available
-    @GetMapping("/check-username/{username}")
-    public ResponseEntity<?> checkUsername(@PathVariable String username) {
-        Optional<User> user = userDetailsService.findByUsername(username);
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("available", !user.isPresent()); // true if available, false if taken
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of(
+                "userId", userDetails.getUserId(),
+                "username", userDetails.getUsername(),
+                "role", userDetails.getRole()
+        ));
+    }
+
+    @GetMapping("/check-username/{username}")
+    public ResponseEntity<?> checkUsernameAvailability(@PathVariable String username) {
+        boolean available = !userDetailsService.findByUsername(username).isPresent();
+        return ResponseEntity.ok(Map.of("available", available));
     }
 }

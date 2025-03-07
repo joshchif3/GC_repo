@@ -35,14 +35,15 @@ public class AuthenticationController {
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Get the authenticated user
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-
-            // Generate the JWT token
             String token = jwtTokenProvider.generateToken(authentication);
 
-            // Return the token, role, and userId in the response
-            return ResponseEntity.ok(new JwtResponse(token, userDetails.getRole(), userDetails.getId()));
+            return ResponseEntity.ok(new JwtResponse(
+                    token,
+                    userDetails.getRole(),
+                    userDetails.getUsername(),  // Added username
+                    userDetails.getUserId()     // Correct method name
+            ));
         } catch (Exception e) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Invalid credentials");

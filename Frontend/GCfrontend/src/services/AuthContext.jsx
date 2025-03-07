@@ -1,55 +1,93 @@
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Create the AuthContext
 const AuthContext = createContext();
+const API_URL = "http://localhost:8080";
 
-// AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const register = async (username, email, password, role) => {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          localStorage.removeItem("token");
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Session validation failed:", error);
+        localStorage.removeItem("token");
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (username, password) => {
     try {
-      const response = await fetch("http://localhost:8080/users/register", {
+      const response = await fetch(`${API_URL}/users/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-          role,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed.");
+        throw new Error(errorData.message || "Login failed.");
       }
 
       const data = await response.json();
-      console.log("Registration successful:", data);
-      navigate("/login");
+      localStorage.setItem("token", data.token);
+      setUser(data);
+      return data.token;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
+  };
+
+  const register = async (username, email, password) => {
+    try {
+      await fetch(`${API_URL}/users/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password, role: "USER" }),
+      });
+
+      return await login(username, password);
     } catch (error) {
       console.error("Registration error:", error);
       throw error;
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    navigate("/login");
+  };
+
   return (
-    <AuthContext.Provider value={{ user, register }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// useAuth hook
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

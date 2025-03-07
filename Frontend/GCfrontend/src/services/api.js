@@ -61,6 +61,21 @@ export const deleteProduct = async (id) => {
   });
 };
 
+// Verify the user's session
+export const verifySession = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const response = await fetch(`${API_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.ok ? response.json() : null;
+  } catch (error) {
+    return null;
+  }
+};
+
 // Fetch the user's cart
 export const fetchCart = async (cartId) => {
   const token = localStorage.getItem("token");
@@ -75,11 +90,17 @@ export const fetchCart = async (cartId) => {
 // Add an item to the cart
 export const addToCart = async (cartId, productId, quantity) => {
   const token = localStorage.getItem("token");
+  console.log(token)
+
+  if (!token) {
+    throw new Error("User is not authenticated. Please log in.");
+  }
+
   const response = await fetch(`${API_URL}/cart/${cartId}/add?productId=${productId}&quantity=${quantity}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`, // Ensure token is included
     },
   });
 

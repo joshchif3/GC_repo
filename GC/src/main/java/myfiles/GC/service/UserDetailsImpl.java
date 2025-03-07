@@ -18,10 +18,17 @@ public class UserDetailsImpl implements UserDetails {
         this.user = user;
     }
 
+    // Add this method to expose the User entity
+    public User getUser() {
+        return this.user;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-        user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name())));
+        user.getRoles().forEach(role ->
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+        );
         return authorities;
     }
 
@@ -35,12 +42,12 @@ public class UserDetailsImpl implements UserDetails {
         return user.getUsername();
     }
 
-    public Integer getId() {
+    public Integer getUserId() {
         return user.getId();
     }
 
     public String getRole() {
-        return user.getRoles().iterator().next().getName().name(); // Assuming one role per user
+        return user.getRoles().iterator().next().getName().name();
     }
 
     @Override
@@ -62,4 +69,5 @@ public class UserDetailsImpl implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

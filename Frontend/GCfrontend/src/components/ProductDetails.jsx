@@ -7,33 +7,35 @@ import { useAuth } from "../services/AuthContext";
 function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { addToCart } = useCart();
   const { user } = useAuth();
 
   useEffect(() => {
     const getProduct = async () => {
-      const data = await fetchProductById(id);
-      setProduct(data);
+      try {
+        const data = await fetchProductById(id);
+        setProduct(data);
+      } catch (err) {
+        console.error("Error fetching product:", err);
+        setError("Failed to load product.");
+      } finally {
+        setLoading(false);
+      }
     };
     getProduct();
   }, [id]);
 
-  useEffect(() => {
-    console.log("User object:", user); // Log the user object
-  }, [user]);
-
   const handleAddToCart = async () => {
-    if (!user) {
+    if (!user?.id) {
       alert("Please log in to add items to your cart.");
       return;
     }
-    if (!user.id) {
-      alert("User ID is missing. Please log in again.");
-      return;
-    }
-    
+
     try {
-      await addToCart(user.id, product.id, 1); // Use user.id as cartId
+      console.log("Adding to cart:", { userId: user.id, productId: product.id });
+      await addToCart(user.id, product.id, 1);
       alert("Product added to cart!");
     } catch (error) {
       console.error("Failed to add to cart:", error);
@@ -41,7 +43,9 @@ function ProductDetails() {
     }
   };
 
-  if (!product) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!product) return <div>Product not found.</div>;
 
   return (
     <div className="product-details">

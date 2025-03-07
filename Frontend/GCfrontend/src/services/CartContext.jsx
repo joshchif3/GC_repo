@@ -4,14 +4,14 @@ import { fetchCart, addToCart as addToCartApi, removeFromCart as removeFromCartA
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState({}); // Use an object to store cart items
-  const [productDetails, setProductDetails] = useState({}); // Store product details including prices
+  const [cartItems, setCartItems] = useState({});
+  const [productDetails, setProductDetails] = useState({});
 
-  // Fetch the user's cart when the component mounts
-  const fetchUserCart = async (cartId) => {
+  // Fetch the user's cart
+  const fetchUserCart = async (userId) => {
     try {
-      const cart = await fetchCart(cartId);
-      setCartItems(cart.items); // cart.items is an object like { "1": 4, "2": 1 }
+      const cart = await fetchCart(userId);
+      setCartItems(cart.items);
 
       // Fetch product details for each item in the cart
       const productIds = Object.keys(cart.items);
@@ -28,12 +28,12 @@ export const CartProvider = ({ children }) => {
   };
 
   // Add an item to the cart
-  const addToCart = async (cartId, productId, quantity) => {
+  const addToCart = async (userId, productId, quantity) => {
     try {
-      const updatedCart = await addToCartApi(cartId, productId, quantity);
-      setCartItems(updatedCart.items); // Update the cart items
+      const updatedCart = await addToCartApi(userId, productId, quantity);
+      setCartItems(updatedCart.items);
 
-      // Fetch the product details if not already in the state
+      // Fetch product details if not already in state
       if (!productDetails[productId]) {
         const product = await fetchProductById(productId);
         setProductDetails(prevDetails => ({
@@ -43,25 +43,25 @@ export const CartProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Failed to add to cart:", error);
-      throw error; // Re-throw the error to handle it in the component
+      throw error;
     }
   };
 
   // Remove an item from the cart
-  const removeFromCart = async (cartId, productId) => {
+  const removeFromCart = async (userId, productId) => {
     try {
-      const updatedCart = await removeFromCartApi(cartId, productId);
-      setCartItems(updatedCart.items); // Update the cart items
+      const updatedCart = await removeFromCartApi(userId, productId);
+      setCartItems(updatedCart.items);
     } catch (error) {
       console.error("Failed to remove from cart:", error);
     }
   };
 
   // Update the quantity of an item in the cart
-  const updateQuantity = async (cartId, productId, quantity) => {
+  const updateQuantity = async (userId, productId, quantity) => {
     try {
-      const updatedCart = await updateQuantityApi(cartId, productId, quantity);
-      setCartItems(updatedCart.items); // Update the cart items
+      const updatedCart = await updateQuantityApi(userId, productId, quantity);
+      setCartItems(updatedCart.items);
     } catch (error) {
       console.error("Failed to update quantity:", error);
     }

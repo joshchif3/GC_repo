@@ -11,20 +11,13 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Reset any previous error message
-
+    setError("");
+    
     try {
-      // Call the login function from the AuthContext
-      const { role, userId } = await login(username, password);
-
-      // After successful login, navigate based on the user's role
-      if (role === "ADMIN") {
-        navigate("/admin");
-      } else {
-        navigate("/user"); // or any other route for regular users
-      }
+      const { token, role } = await login(username, password);
+      localStorage.setItem("token", token);
+      navigate(role === "ADMIN" ? "/admin" : "/");
     } catch (error) {
-      // Display an error message if login fails
       setError("Login failed. Please check your credentials.");
       console.error("Login error:", error);
     }
@@ -34,9 +27,7 @@ function LoginPage() {
     <div className="auth-container">
       <div className="auth-box">
         <h2>Login</h2>
-
         {error && <p className="error-message">{error}</p>}
-
         <form onSubmit={handleSubmit}>
           <input
             type="text"
